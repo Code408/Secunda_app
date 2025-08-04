@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Виртуальное окружение
+.venv/
+venv/
+ENV/
+env/
+
+# Файлы настроек IDE
+.vscode/
+.idea/
+*.swp
+
+# PyInstaller
+*.spec
+
+# Логи
+*.log
+
+# Кеши и временные файлы
+*.tmp
+*.bak
+*.cache/
+*.pytest_cache/
+
+# Тестовые отчёты
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.tox/
+nosetests.xml
+test-results/
+
+# pipenv
+Pipfile.lock
+
+# dotenv / секреты
+.env
+
+# MyPy / Pylint
+.mypy_cache/
+.pyright/
+.dmypy.json
+.pyre/
+
+# FastAPI-specific (если используется Uvicorn/Starlette logs или кеши)
+*.pid
