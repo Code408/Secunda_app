@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="my-4">Организации</h1>
+
+<div class="row">
+    <div class="col-md-8">
+        <div id="map" style="width: 100%; height: 400px;"></div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                Фильтры
+            </div>
+            <div class="card-body">
+                <form id="filter-form">
+                    <div class="mb-3">
+                        <label class="form-label">Поиск по названию</label>
+                        <input type="text" class="form-control" name="name" value="{{ request.query_params.get('name', '') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Вид деятельности</label>
+                        <select class="form-select" name="activity_id">
+                            <option value="">...</option>
+                            {% for activity in activities %}
+                            <option value="{{ activity.id }}" {% if request.query_params.get('activity_id') == activity.id|string %}selected{% endif %}>{{ activity.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Поиск по местоположению</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Широта" name="lat" value="{{ request.query_params.get('lat', '') }}">
+                            <input type="text" class="form-control" placeholder="Долгота" name="lon" value="{{ request.query_params.get('lon', '') }}">
+                            <input type="text" class="form-control" placeholder="Радиус (км)" name="radius" value="{{ request.query_params.get('radius', '1') }}">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Поиск по зданию</label>
+                        <select class="form-select" name="building_id">
+                            <option value="">...</option>
+                            {% for building in buildings %}
+                            <option value="{{ building.id }}" {% if request.query_params.get('building_id') == building.id|string %}selected{% endif %}>{{ building.address }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Применить</button>
+                    <button type="button" class="btn btn-secondary ms-2" id="use-current-location">
+                        Использовать мое местоположение
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Телефоны</th>
+                <th>Здание</th>
+                <th>Виды деятельности</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for org in organizations %}
+            <tr>
+                <td><a href="/api/v1/web/organizations/{{ org.id }}">{{ org.name }}</a></td>
+                <td>{{ org.phones|join(', ') }}</td>
+                <td>{{ org.building.address }}</td>
+                <td>{{ org.activities|map(attribute='name')|join(', ') }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    ymaps.ready(initMap);
+
+    function initMap() {
+        // Use search location if available, otherwise default to Moscow
+        const searchParams = JSON.parse('{{ search_params|tojson|safe }}' || '{}');
+        let center = [55.76, 37.64];
+        let zoom = 10;
+        
+        if (searchParams.lat && searchParams.lon) {
+            center = [searchParams.lat, searchParams.lon];
+            zoom = 14;
+        }
+
+        const map = new ymaps.Map('map', {
+            center: center,
+            zoom: zoom
+        });
+
+        // Get organization data from template
+        const orgsData = JSON.parse('{{ organizations|tojson|safe }}');
+        
+        // Process each organization
+        orgsData.forEach(org => {
+            if (org.building && org.building.latitude && org.building.longitude) {
+                const placemark = new ymaps.Placemark(
+                    [org.building.latitude, org.building.longitude],
+                    {
+                        hintContent: org.name || '',
+                        balloonContent: `${org.name || ''}<br>${org.building.address || ''}`
+                    }
+                );
+                map.geoObjects.add(placemark);
+            }
+        });
+    }
+
+    // Handle "Use my location" button
+    document.getElementById('use-current-location').addEventListener('click', () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    document.querySelector('input[name="lat"]').value = position.coords.latitude.toFixed(6);
+                    document.querySelector('input[name="lon"]').value = position.coords.longitude.toFixed(6);
+                },
+                (error) => {
+                    alert('Не удалось получить ваше местоположение: ' + error.message);
+                }
+            );
+        } else {
+            alert('Геолокация не поддерживается вашим браузером');
+        }
+    });
+
+    // Handle form submission
+    document.getElementById('filter-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData.entries()) {
+            if (value) params.append(key, value);
+        }
+
+        window.location.search = params.toString();
+    });
+</script>
+{% endblock %}

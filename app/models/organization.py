@@ -11,11 +11,11 @@ class Organization(Base):
     phones = Column(JSON)  # Список телефонов: ["+7-XXX-XXX-XX-XX"]
     
     building = relationship("Building", back_populates="organizations")
-    activities = relationship("Activity", secondary="organization_activity")
+    activities = relationship("Activity", secondary="organization_activities")
 
 # Ассоциативная таблица для связи многие-ко-многим
-organization_activity = Table(
-    'organization_activity',
+organization_activities = Table(
+    'organization_activities',
     Base.metadata,
     Column('organization_id', Integer, ForeignKey('organizations.id'), primary_key=True),
     Column('activity_id', Integer, ForeignKey('activities.id'), primary_key=True)

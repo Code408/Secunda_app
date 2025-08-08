@@ -1,25 +1,42 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  web:
+  app:
     build: .
+    working_dir: /secunda_test
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=mysql+asyncmy://root:12345@mysql:3306/secunda
-      - API_KEY=test-api-key
+      - MYSQL_HOST=mysql
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=12345
+      - MYSQL_DATABASE=secunda
+      - YANDEX_MAPS_API_KEY=a08148f5-79ba-42eb-bee3-0a73af33c5ad
+      - PYTHONPATH=/secunda_test/app
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./:/secunda_test
 
   mysql:
     image: mysql:8.0
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: 12345
       MYSQL_DATABASE: secunda
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p12345"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql_data:

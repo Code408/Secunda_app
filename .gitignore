@@ -39,7 +39,7 @@ test-results/
 Pipfile.lock
 
 # dotenv / секреты
-.env
+#.env
 
 # MyPy / Pylint
 .mypy_cache/

@@ -2,11 +2,13 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from app.core.settings import settings
-import asyncio
+
+ASYNC_DATABASE_URL = settings.DATABASE_URL  # уже с ?charset=utf8mb4
+SYNC_DATABASE_URL = ASYNC_DATABASE_URL.replace("+aiomysql", "+pymysql")
 
 # Async engine for application
 async_engine = create_async_engine(
-    settings.DATABASE_URL,
+    ASYNC_DATABASE_URL,
     echo=True,
     pool_pre_ping=True,
     pool_size=5,
@@ -21,10 +23,11 @@ AsyncSessionLocal = async_sessionmaker(
 
 # Sync engine for Alembic
 sync_engine = create_engine(
-    settings.DATABASE_URL.replace('+aiomysql', '+pymysql'),
+    SYNC_DATABASE_URL,
     echo=True,
     pool_pre_ping=True
 )
+
 SessionLocal = sessionmaker(
     bind=sync_engine,
     autocommit=False,

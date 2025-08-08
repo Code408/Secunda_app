@@ -13,21 +13,27 @@ from app.models.organization import Organization
 from app.models.building import Building
 from app.models.activity import Activity
 
+# Alembic config
 config = context.config
 fileConfig(config.config_file_name)
 target_metadata = Base.metadata
 
+# Фильтр для системных схем MySQL
 def include_object(object, name, type_, reflected, compare_to):
-    # Пропускаем системные схемы MySQL
     if type_ == "table" and object.schema in ['mysql', 'performance_schema', 'information_schema', 'sys']:
         return False
-    # Для колонок проверяем схему родительской таблицы
     elif type_ == "column" and object.table.schema in ['mysql', 'performance_schema', 'information_schema', 'sys']:
         return False
     return True
 
+# 💡 Функция для подмены async URL на sync URL
+def get_sync_url():
+    url = os.getenv("DATABASE_URL")
+    return url.replace("mysql+aiomysql", "mysql+pymysql")
+
+# OFFLINE режим
 def run_migrations_offline():
-    url = config.get_main_option("sqlalchemy.url")
+    url = get_sync_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -37,17 +43,20 @@ def run_migrations_offline():
     with context.begin_transaction():
         context.run_migrations()
 
+# ONLINE режим
 def run_migrations_online():
-    from app.db.session import sync_engine
-    
-    with sync_engine.connect() as connection:
+    from sqlalchemy import create_engine
+
+    connectable = create_engine(get_sync_url(), pool_pre_ping=True)
+
+    with connectable.connect() as connection:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             compare_type=True,
-            include_schemas=True,  # Важно для MySQL
-            include_object=include_object,  # Добавляем наш фильтр
-            render_as_batch=True  # Для совместимости с MySQL
+            include_schemas=True,
+            include_object=include_object,
+            render_as_batch=True
         )
 
         with context.begin_transaction():
